@@ -120,9 +120,13 @@ func Encode(typeStrs []string, values ...any) ([]byte, error) {
 			arraySize := big.NewInt(int64(len(arrayValues)))
 			encoded = append(common.LeftPadBytes(arraySize.Bytes(), 32), encoded...)
 		} else if isTypeTuple {
-			encoded, err = Encode(splitedTypes, values[i].([]any)...)
-			if err != nil {
-				return []byte{}, err
+			if values[i] == nil {
+				encoded = common.LeftPadBytes(big.NewInt(0).Bytes(), 32*len(splitedTypes))
+			} else {
+				encoded, err = Encode(splitedTypes, values[i].([]any)...)
+				if err != nil {
+					return []byte{}, err
+				}
 			}
 		} else {
 			encoded, err = encode(typeStr, values[i])
