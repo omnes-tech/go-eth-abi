@@ -67,35 +67,25 @@ func IsTuple(typeStr string) (bool, []string, error) {
 		return false, nil, fmt.Errorf("invalid tuple definition")
 	}
 
-	if strings.Count(typeStr, "(") > 0 {
-		openParenthesisIndex := strings.Index(typeStr, "(")
-		closeParenthesisIndex := strings.LastIndex(typeStr, ")")
-		innerCloseParenthesisIndex := strings.LastIndex(typeStr[:closeParenthesisIndex], ")")
-		innerCloseBracketsIndex := strings.LastIndex(typeStr[:closeParenthesisIndex], "]")
-
-		var splitTypes []string
-		if innerCloseParenthesisIndex != -1 &&
-			innerCloseBracketsIndex != -1 {
-			innerOpenParenthesisIndex := strings.Index(typeStr[openParenthesisIndex+1:closeParenthesisIndex], "(") + len(typeStr[:openParenthesisIndex]) + 1
-			if innerCloseParenthesisIndex > innerCloseBracketsIndex {
-				splitTypes = strings.Split(typeStr[openParenthesisIndex+1:innerOpenParenthesisIndex], ",")
-				splitTypes = append(splitTypes, typeStr[innerOpenParenthesisIndex:innerCloseParenthesisIndex+1])
-				splitTypes = append(splitTypes, strings.Split(typeStr[innerCloseParenthesisIndex+2:closeParenthesisIndex], ",")...)
-			} else {
-				splitTypes = strings.Split(typeStr[openParenthesisIndex+1:innerOpenParenthesisIndex], ",")
-				splitTypes = append(splitTypes, typeStr[innerOpenParenthesisIndex:innerCloseBracketsIndex+1])
-				splitTypes = append(splitTypes, strings.Split(typeStr[innerCloseBracketsIndex+2:closeParenthesisIndex], ",")...)
-			}
-		} else {
-			splitTypes = SplitParams(typeStr[openParenthesisIndex+1 : closeParenthesisIndex])
+	// Strip trailing array suffixes: (T)[] / (T)[3] / (T)[][]
+	base := typeStr
+	for {
+		open := strings.LastIndex(base, "[")
+		if open == -1 || !strings.HasSuffix(base, "]") {
+			break
 		}
-
-		splitTypes = cleanSplitTypes(splitTypes)
-
-		return true, splitTypes, nil
+		// only strip if '[' is after the matching tuple ')'
+		if strings.LastIndex(base, ")") > open {
+			break
+		}
+		base = base[:open]
+	}
+	if !strings.HasPrefix(base, "(") || !strings.HasSuffix(base, ")") {
+		return false, nil, nil
 	}
 
-	return false, nil, nil
+	inner := base[1 : len(base)-1]
+	return true, SplitParams(inner), nil
 }
 
 // GetSigTypes gets the input parameters type from given function
