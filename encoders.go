@@ -422,15 +422,14 @@ func calculateHeadLength(rawHeadChunks [][]byte) uint64 {
 
 // calculateTailOffsets calculates encoded bytecode tail offsets.
 func calculateTailOffsets(tailChunks [][]byte) []uint64 {
-
-	tailOffsets := []uint64{0}
-	accSum := uint64(0)
-	for i := 0; i < len(tailChunks)-1; i++ {
-		accSum += uint64(len(tailChunks[i]))
-		tailOffsets = append(tailOffsets, accSum)
+	offsets := make([]uint64, len(tailChunks))
+	var acc uint64
+	for i, chunk := range tailChunks {
+		offsets[i] = acc
+		acc += uint64(len(chunk))
 	}
 
-	return tailOffsets
+	return offsets
 }
 
 // buildHeadChunks builds the head chunk for the encoded bytecode.
